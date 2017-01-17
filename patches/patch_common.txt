@@ -1,0 +1,153 @@
+diff -Naur ../OG3611_GPL-SRC.v1.4.17.37_20140305/common/comps/gpl/iptaccount/Makefile dlink/common/comps/gpl/iptaccount/Makefile 
+--- ../OG3611_GPL-SRC.v1.4.17.37_20140305/common/comps/gpl/iptaccount/Makefile	2013-10-22 13:18:23.000000000 +0200
++++ dlink/common/comps/gpl/iptaccount/Makefile	2016-12-16 18:31:31.000000000 +0100
+@@ -27,8 +27,8 @@
+ 
+ linuxinstall:
+ 	make -C src/iptaccount KERNEL_DIR=$(KERNEL_DIR)
+-	make -C src/iptaccount KERNEL_DIR=$(KERNEL_DIR) install
++#	make -C src/iptaccount KERNEL_DIR=$(KERNEL_DIR) install
+ 	cp -df src/iptaccount/src/.libs/libipt_ACCOUNT.so.* $(INSTALL_DIR)/
+-	cp -df src/iptaccount/src/.libs/libipt_ACCOUNT.l* $(INSTALL_DIR)/
+-	cp -df src/iptaccount/iptaccount/.libs/iptaccount $(INSTALL_DIR)/
++	cp -f src/iptaccount/src/.libs/libipt_ACCOUNT.l* $(INSTALL_DIR)/
++	cp -df src/iptaccount/iptaccount/.libs/iptaccount $(INSTALL_DIR)/	
+ 	make clean
+diff -Naur ../OG3611_GPL-SRC.v1.4.17.37_20140305/common/comps/gpl/iproute/Makefile dlink/common/comps/gpl/iproute/Makefile 
+--- ../OG3611_GPL-SRC.v1.4.17.37_20140305/common/comps/gpl/iproute/Makefile	2013-10-22 13:17:55.000000000 +0200
++++ dlink/common/comps/gpl/iproute/Makefile	2016-12-16 17:01:58.146374935 +0100
+@@ -21,7 +21,7 @@
+ 
+ linux:
+ 	cd src/iproute
+-	make linuxinstall CC=$(TGT_TOOL)gcc CROSS=$(TGT_TOOL) OS_VER=$(OS_VERSION) TGT_CPU=$(TGT_CPU) TGT_TOOL=$(TGT_TOOL)
++	make linuxinstall CC=$(TGT_TOOL)gcc CROSS=$(TGT_TOOL) OS_VER=$(OS_VERSION) TGT_CPU=$(TGT_CPU) TGT_TOOL=$(TGT_TOOL) LEX=/usr/bin/flex
+ 
+ clean:
+ 	make -C src/iproute CROSS=$(TGT_TOOL) distclean
+diff -Naur ../OG3611_GPL-SRC.v1.4.17.37_20140305/common/comps/gpl/busybox/Makefile OG3611_GPL-SRC.v1.4.17.37_20140305/common/comps/gpl/busybox/Makefile
+--- ../OG3611_GPL-SRC.v1.4.17.37_20140305/common/comps/gpl/busybox/Makefile	2013-10-22 13:18:00.000000000 +0200
++++ OG3611_GPL-SRC.v1.4.17.37_20140305/common/comps/gpl/busybox/Makefile	2016-08-27 10:54:43.942475737 +0200
+@@ -402,7 +402,12 @@
+ -include $(srctree)/arch/$(ARCH)/Makefile
+ export KBUILD_DEFCONFIG
+ 
+-config %config: scripts_basic outputmakefile FORCE
++config: scripts_basic outputmakefile FORCE
++	$(Q)mkdir -p include
++	$(Q)$(MAKE) $(build)=scripts/kconfig $@
++	$(Q)$(MAKE) -C $(srctree) KBUILD_SRC= .kernelrelease
++
++%config: scripts_basic outputmakefile FORCE
+ 	$(Q)mkdir -p include
+ 	$(Q)$(MAKE) $(build)=scripts/kconfig $@
+ 	$(Q)$(MAKE) -C $(srctree) KBUILD_SRC= .kernelrelease
+@@ -1245,9 +1250,14 @@
+ 	$(Q)$(MAKE) $(build)=$(build-dir) $(target-dir)$(notdir $@)
+ 
+ # Modules
+-/ %/: prepare scripts FORCE
++/: prepare scripts FORCE
+ 	$(Q)$(MAKE) KBUILD_MODULES=$(if $(CONFIG_MODULES),1) \
+ 	$(build)=$(build-dir)
++
++%/: prepare scripts FORCE
++	$(Q)$(MAKE) KBUILD_MODULES=$(if $(CONFIG_MODULES),1) \
++	$(build)=$(build-dir)
++
+ %.ko: prepare scripts FORCE
+ 	$(Q)$(MAKE) KBUILD_MODULES=$(if $(CONFIG_MODULES),1)   \
+ 	$(build)=$(build-dir) $(@:.ko=.o)
+diff -Naur ../OG3611_GPL-SRC.v1.4.17.37_20140305/common/comps/gpl/iptables-1.4.7/Makefile dlink/common/comps/gpl/iptables-1.4.7/Makefile 
+--- ../OG3611_GPL-SRC.v1.4.17.37_20140305/common/comps/gpl/iptables-1.4.7/Makefile	2013-10-22 13:18:23.000000000 +0200
++++ dlink/common/comps/gpl/iptables-1.4.7/Makefile	2016-12-16 20:01:06.000000000 +0100
+@@ -12,14 +12,20 @@
+ 
+ CUR_DIR=$(shell /bin/pwd)
+ INSTALL = /usr/bin/install -c
++v4_bin_links = iptables-xml
+ v4_sbin_links = iptables iptables-restore iptables-save
+ v6_sbin_links = ip6tables ip6tables-restore ip6tables-save
+ LN_S = ln -s
+ IPTABLES_INSTALL_DIR=$(INSTALL_DIR)/iptables/sbin/
+ 
+ linux:
+-	cd src/iptables-1.4.7 && export CC=$(TGT_TOOL)gcc && export CROSS_COMPILE=$(TGT_TOOL) && export CFLAGS=$(TGT_CFLAGS) &&	\
++	cd src/iptables-1.4.7 && \
++	export CC=$(TGT_TOOL)gcc && \
++	export CROSS_COMPILE=$(TGT_TOOL) && \
++	export CFLAGS=$(TGT_CFLAGS) &&	\
+ 	./configure --host=$(TGT_CPU)-linux   --prefix=$(INSTALL_DIR)/iptables --with-xtlibdir=/usr/local/lib/iptables
++	
++#	make oldconfig
+ 	make linuxinstall OS_VER=$(OS_VERSION) TGT_CPU=$(TGT_CPU) TGT_TOOL=$(TGT_TOOL)
+ 
+ 
+@@ -33,6 +39,15 @@
+ 	mkdir -p $(INSTALL_DIR)/iptables/sbin/
+ 	make -C src/iptables-1.4.7
+ #	make -C src/iptables-1.4.7 install
+-	cp  -df src/iptables-1.4.7/extensions/*.so  $(INSTALL_DIR)/iptables/libexec/xtables
++	cp -df src/iptables-1.4.7/extensions/*.so  $(INSTALL_DIR)/iptables/libexec/xtables
++	cp -df src/iptables-1.4.7/.libs/lib*.so* $(INSTALL_DIR)/iptables/lib/
++	cp -f src/iptables-1.4.7/.libs/lib*.l* $(INSTALL_DIR)/iptables/lib/
++	cp -df src/iptables-1.4.7/libiptc/.libs/lib*.so* $(INSTALL_DIR)/iptables/lib/
++	cp -f src/iptables-1.4.7/libiptc/.libs/lib*.l* $(INSTALL_DIR)/iptables/lib/
++	cp -f src/iptables-1.4.7/.libs/iptables-multi $(INSTALL_DIR)/iptables/sbin/
++	cp -f src/iptables-1.4.7/.libs/ip6tables-multi $(INSTALL_DIR)/iptables/sbin/
++	for i in ${v4_bin_links}; do cp $(INSTALL_DIR)/iptables/sbin/iptables-multi ${INSTALL_DIR}/iptables/sbin/$$i ; done;
++	for i in ${v4_sbin_links}; do cp $(INSTALL_DIR)/iptables/sbin/iptables-multi ${INSTALL_DIR}/iptables/sbin/$$i ; done;
++	for i in ${v6_sbin_links}; do cp $(INSTALL_DIR)/iptables/sbin/ip6tables-multi ${INSTALL_DIR}/iptables/sbin/$$i ; done;
+ 	make -C src/iptables-1.4.7 clean
+ 	make -C src/iptables-1.4.7 distclean
+diff -Naur ../OG3611_GPL-SRC.v1.4.17.37_20140305/common/comps/gpl/iputils/src/iputils/Makefile OG3611_GPL-SRC.v1.4.17.37_20140305/common/comps/gpl/iputils/src/iputils/Makefile
+--- ../OG3611_GPL-SRC.v1.4.17.37_20140305/common/comps/gpl/iputils/src/iputils/Makefile	2013-10-22 13:17:56.000000000 +0200
++++ OG3611_GPL-SRC.v1.4.17.37_20140305/common/comps/gpl/iputils/src/iputils/Makefile	2016-08-27 13:07:40.014265220 +0200
+@@ -1,5 +1,5 @@
+ # Path to parent kernel include files directory
+-KERNEL_INCLUDE=/usr/src/linux/include
++KERNEL_INCLUDE=$(KERNELPATH)/include
+ LIBC_INCLUDE=/usr/include
+ 
+ DEFINES= 
+diff -Naur ../OG3611_GPL-SRC.v1.4.17.37_20140305/common/comps/gpl/iputils/src/iputils/ping.c OG3611_GPL-SRC.v1.4.17.37_20140305/common/comps/gpl/iputils/src/iputils/ping.c
+--- ../OG3611_GPL-SRC.v1.4.17.37_20140305/common/comps/gpl/iputils/src/iputils/ping.c	2013-10-22 13:17:56.000000000 +0200
++++ OG3611_GPL-SRC.v1.4.17.37_20140305/common/comps/gpl/iputils/src/iputils/ping.c	2016-08-27 13:20:47.065630799 +0200
+@@ -63,7 +63,6 @@
+ #include <netinet/ip.h>
+ #include <netinet/ip_icmp.h>
+ 
+-
+ #define	MAXIPLEN	60
+ #define	MAXICMPLEN	76
+ #define	NROUTES		9		/* number of record route slots */
+@@ -104,6 +103,12 @@
+ char *device;
+ int pmtudisc = -1;
+ 
++#define ICMP_FILTER                     1
++
++struct icmp_filter {
++        __u32           data;
++};
++
+ 
+ int
+ main(int argc, char **argv)
+diff -Naur ../OG3611_GPL-SRC.v1.4.17.37_20140305/common/comps/gpl/traceroute/src/traceroute/default.rules OG3611_GPL-SRC.v1.4.17.37_20140305/common/comps/gpl/traceroute/src/traceroute/default.rules
+--- ../OG3611_GPL-SRC.v1.4.17.37_20140305/common/comps/gpl/traceroute/src/traceroute/default.rules	2013-10-22 13:18:26.000000000 +0200
++++ OG3611_GPL-SRC.v1.4.17.37_20140305/common/comps/gpl/traceroute/src/traceroute/default.rules	2016-08-27 12:40:24.575336508 +0200
+@@ -182,12 +182,9 @@
+ 	@mkdir -p $(DESTDIR)$(includedir)
+ 	$(INSTALL) $(install_includes) $(DESTDIR)$(includedir)
+ endif
+-	@true
+ ifneq ($(install_manuals),)
+-define inst_man
+-@mkdir -p $(DESTDIR)$(mandir)/man$(suffix $(1))
++	@mkdir -p $(DESTDIR)$(mandir)/man$(suffix $(1))
+ 	cp -f $(1) $(DESTDIR)$(mandir)/man$(suffix $(1))
+ 	
+-endef
+ 	$(foreach man,$(install_manuals),$(call inst_man,$(man)))
+ endif
